@@ -1,8 +1,8 @@
 class GeneticAlgorithm{
   // GeneticAlgorithm attributes:
-  /*  crossoverType
-    //  chromType
-    //  chromValues
+  /*    crossoverType - "one point", "two point" or "uniform" 
+    //  chromType - "binary" or "discrete"
+    //  chromValues -
     //  chromSize
     //  popSize
     //  probMutation
@@ -12,14 +12,13 @@ class GeneticAlgorithm{
     //  chromBest
     //  chromAvg
     */
-  constructor(crossoverType,selectionType,chromType,chromValues,chromSize,lowerBound,upperBound,popSize,probMutation,probCrossover,probElitism){
+  
+  constructor(crossoverType,selectionType,chromType,chromValues,chromSize,popSize,probMutation,probCrossover,probElitism){
   // Description constructor: 
-  /*General cronstucter method for a general purpose genetic algorithm. This object is used to keep the struct and metrics of the algorithm.
-  // INPUT: crossoverType -
+  /*General constructor method for a general purpose genetic algorithm. This object is used to keep the struct and metrics of the algorithm.
+  // INPUT: crossoverType - 
   //        chromType -
   //        chromValues -
-  //        lowerBound -
-  //        upperBound -
   //        popSize -
   //        probMutation -
   //        probCrossover -
@@ -34,24 +33,19 @@ class GeneticAlgorithm{
     this.probMutation = probMutation || 0.1;
     this.probCrossover = probCrossover || 0.8;
     this.probElitism = probElitism || 0.1;
-    this.chromBest = [];
+    this.chromBest = null;
     this.chromAvg = -Infinity;
     this.chormTotal = 0;
     this.population = [];  
-    for(let i = 0; i < this.popSize; i++){
-      this.population.push(new Chromossome(this.chromSize,this.chromType,this.chromValues,lowerBound || 0,upperBound || 2));
+
+    let i = 0;
+
+    while(i < this.popSize){
+      this.population.push(new Chromossome(i,this.chromSize,this.chromType,this.chromValues));
+       i++;
     }
-    
   }
-  
-  get population(){
-    return (this._population);
-  }
-  
-  set population(pop){
-    this._population = pop;
-  }
-  
+
   viewPopulation(){
   // Description viewPopulation:
   /*
@@ -70,22 +64,27 @@ class GeneticAlgorithm{
     let newAvg = 0;
     for(let i = 0; i < this.popSize;i++){
       
-      this.population[i].updateFitness();
+      this.population[i].updateFitness(i);
       
       newAvg+= this.population[i].chromFitness;
       
-      if(this.chromBest == null) this.chromBest = this.population[i];
-      else if (this.chromBest.chromFitness < this.population[i].chromFitness) this.chromBest = this.population[i].chromFitness
+      //if(this.chromBest == null) {this.chromBest = this.population[i];}
+      //else if (this.chromBest.chromFitness < this.population[i].chromFitness) this.chromBest = this.population[i].chromFitness
     }
     this.chromTotal = newAvg;
     this.chromAvg = newAvg/this.popSize;
     
     // Sorting population by fitness
-    this.population.sort( (var1, var2) => {
-      if(var1.chromFitness < var2.chromFitness) return 1
+    this.population.sort(function(var1, var2){
+      if(var1.chromFitness < var2.chromFitness) return 1;
       else return -1;
       }
-    )
+    );
+
+    /*for(let i = 0;  i < 100; i++){
+      print(`i:${i} chromID ${this.population[i].chromID} chromFit ${this.population[i].chromFitness}`);
+    }*/
+    this.chromBest = this.population[0];
   }
   
   crossOver(chromOne,chromTwo){
@@ -94,7 +93,7 @@ class GeneticAlgorithm{
   // INPUT: Chromossome A, Chromossome B.
   // OUTPUT: The new chromossome
   */
-    let newChrom = new Chromossome(this.chromSize,this.chromType,this.chromValues,0,1)
+    let newChrom = new Chromossome(0,this.chromSize,this.chromType,this.chromValues);
     
     // Generates one position where it's stops using A genes and uses B genes.
     if(this.crossoverType == "one point"){
@@ -169,6 +168,7 @@ class GeneticAlgorithm{
 
         let second = this.population[aux]
         newPop.push(this.crossOver(first,second));
+      
       }
     }
     else if(this.selectionType == "rank"){
@@ -188,8 +188,39 @@ class GeneticAlgorithm{
       let rand = int(random(0,this.population.length));
       newPop.push(this.population[rand]);
     }
-    
+    //this.population = [];
     this.population = newPop;
   }
   
 }
+
+/*let i,max,a = [];
+
+
+function setup() {
+  //createCanvas(400, 400);
+  //noLoop();
+  a = new GeneticAlgorithm("one point",  // Crossover type
+                               "roulette", // Selection type
+                               "binary",  // Chromossome type
+                               0,  // Chromossome permited values  (only valid for discrete type)
+                               15   // Chromossome size                              
+                              );   // Chromossome value upper limit (for continuos
+  i = 0; 
+  max = 100;
+  frameRate(5);
+}
+
+function draw() {
+  if(i<max){
+    a.updateFitness();
+    print(`Generation: ${frameCount} Avg:  ${a.chromAvg} Best Fitness: ${a.population[0].chromFitness} Best: ${a.population[0].chromGenes}`);
+    a.newGeneration();
+    i++;
+  }
+  else{
+  a.updateFitness();
+  print(`Vencedor: ${a.population[0].chromGenes} Pontuacao:${a.population[0].chromFitness}`);
+  }
+  
+}*/
