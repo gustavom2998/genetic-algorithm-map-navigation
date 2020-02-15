@@ -1,44 +1,55 @@
+/* 	Project name: Genetic Algorithm Visualization
+	Project author: Gustavo Fardin Monti.
+	The P5.JS library was used. Visit the website to know more: https://p5js.org/
+	Feel free to contact me at gustavo_m@hotmail.co.uk */
+
+/////////////////////////////// VARIABLE DECLERATION ///////////////////////////////
 // Simulation Configuration
-let NUMBER_PLAYERS;
-let NUMBER_MOVES;
-let NUMBER_GENERATION;
-let NUMBER_GENERATION_FRAME;
-let NUMBER_COUNTER_CHROM;
-let PLAYER_VELOCITY;
+let NUMBER_PLAYERS;				// Number of players per generation (size of generation)
+let NUMBER_MOVES;				// Maximum number of moves per player
+let NUMBER_GENERATION;			// The number of the generation for the current execution (reset after every STOP)
+let NUMBER_GENERATION_FRAME;	// The number of frames passed in the current generation (can be the number of moves made)
+let PLAYER_VELOCITY;			// The number of spaces the player moves in a determined direction
 
 // Simulation Variables
-let PLAYERS = [];
-let OBSTACLES = [];
-let GA_MANAGER = [];
-let MAP_BORDER = 1020 - 220;
-let PERMIT_ARRAY = [];
-let PERMIT_VALUES = [];
+let PLAYERS = [];		// Object of type PlayerControl: Used to control the players positions, states, when they move, etc.
+let OBSTACLES = [];		// Object-array of type Obstacle: Used to store the obstacles (positions and sizes), also used to check for collisions
+let GA_MANAGER = [];	// Object of type GeneticAlgorithm: Stores the Genetic Algorithm, parameters, chromossomes, etc. Used to decide how players will move
+let PERMIT_ARRAY = [];	// An array of the possible moves a player may make. 
+let PERMIT_VALUES = [];	// A matrix containing all moves a player may make, for X steps.
+let MAP_BORDER = 800;	// The X edge of the map the players may navigate. Allows to separete the GUI space
+let DIVERSITY_WEIGHT;
+let DIVERSITY_FALLOF;
+let CURRENT_DIVERSITY;
 
 // Individual Player Configuration
-let START_POS;
-let OBJECTIVE_POS;
-let PLAYER_SIZE;
-
-// Obstacle drawing variables
-let BEGIN_RECT = [];
-let END_RECT = [];
+let START_POS;		// Vector containing the start position for all players
+let OBJECTIVE_POS;	// Vector containing the objective position for all players.
+let PLAYER_SIZE;	// Vector containg the X and Y size for all players.
 
 // GUI Variables
-let TOOL = 1; // 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos
-let GUI_COLOR;
-let GUI_OBJECTS = [];
+let TOOL = 1; 			// 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos
+let GUI_COLOR;			// Default color used for the GUI
+let GUI_OBJECTS = [];	// Object-array of type GuiObject: Used to store interactible buttons and their functions
+let BEGIN_RECT = [];	// Vector used to store the first pair of coordinates for a new obstacle.
+let END_RECT = [];		// Vector used to store the second pair of coordinates for a new obstacle.
+let TOGGLE_POP_CENTER;	// Used to decide whether to draw or not the red circle representing the average position of the population.
 
-// Setting up variables
+/////////////////////////////// VARIABLE SETUP ////////////////////////////////////
 function setup() {
   createCanvas(1020,600);
   frameRate(100);
 
-  NUMBER_PLAYERS = 100;
+  NUMBER_PLAYERS = 200;
   NUMBER_GENERATION = 0;
   NUMBER_GENERATION_FRAME = 0;
-  NUMBER_MOVES = 100;
+  NUMBER_MOVES = 700;
   NUMBER_COUNTER_CHROM = 0;
   PLAYER_VELOCITY = 5;
+  DIVERSITY_WEIGHT = 15;
+  DIVERSITY_FALLOF = 0.1;
+  CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
+  TOGGLE_POP_CENTER
 
   // Individual Player Configuration
   START_POS = createVector(200,200)
@@ -49,14 +60,15 @@ function setup() {
   PERMIT_VALUES = [0,1,2,3,5,6,7,8] // NW,N,NE,W,STAY,E,SW,S,SE
 
   // Setting up GUI array - adds all buttons to the array
-  addTab1();
+  setupTabGA();
 }
 
+/////////////////////////////// MAIN LOOP /////////////////////////////////////////
 function draw(){
   background(color(40,40,60));
   
   // Draws the GUI
-  drawTab1();
+  drawTabGA();
 
   // Draws the obstacles
   for(let i = 0; i < OBSTACLES.length; i++) OBSTACLES[i].draw();
@@ -65,6 +77,7 @@ function draw(){
   if(TOOL == 2){
   	let res = PLAYERS.move();
   }
+
   // Drawing a new obstacle - shows obstacle being drawn until mouse release
   if(TOOL == 3 && mouseIsPressed && mouseX < MAP_BORDER){
   	let x1; let x2; let y1; let y2;
@@ -91,23 +104,23 @@ function draw(){
   	rect(x1,y1,x2-x1,y2-y1);
   }
 
-  // Draw player at mouse if change position is selected, else
+  // Draw player at mouse if change position is selected, else draw it at default
   fill(0,255,0);
   stroke(100);
   if(TOOL == 5 && mouseX < MAP_BORDER) rect(mouseX,mouseY,PLAYER_SIZE.x,PLAYER_SIZE.y);
   else if(TOOL != 2) rect(START_POS.x,START_POS.y,PLAYER_SIZE.x,PLAYER_SIZE.y);
 
-  // Draw objective at mouse if change goal position is selected
+  // Draw objective at mouse if change goal position is selected, else draw it at default
   fill(255,255,0);
   stroke(255,255,0);
   if(TOOL == 6 && mouseX < MAP_BORDER) rect(mouseX,mouseY,PLAYER_SIZE.x,PLAYER_SIZE.y);
   else if(TOOL != 2) rect(OBJECTIVE_POS.x,OBJECTIVE_POS.y,PLAYER_SIZE.x,PLAYER_SIZE.y);
-  
-  	
-  	
 }
 
-function addTab1(){
+/////////////////////////////// AUXILIARY FUNCTIONS ///////////////////////////////
+function setupTabGA(){
+	// For each row, a Y value of 50 was used as an offset. 
+	// For two buttons per row, the first button had an X offset of 10, size 95. The second button had an offset of 100 + 10 + 5.
 	// First Row
 	let runButtonPos = createVector(MAP_BORDER + 10,10)
 	let runButtonSize = createVector(95,40);
@@ -145,7 +158,7 @@ function addTab1(){
 	let nMovesButtonSize = createVector(200,40);
 	let nMovesButton = new guiObject(nMovesButtonPos,nMovesButtonSize,"Moves", 1);
 	
-
+	// Adding buttons to the GUI_OBJECTS vector
 	GUI_OBJECTS.push(runButton);
 	GUI_OBJECTS.push(stopButton);
 	GUI_OBJECTS.push(drawButton);
@@ -154,12 +167,10 @@ function addTab1(){
 	GUI_OBJECTS.push(goalButton);
 	GUI_OBJECTS.push(popSizeButton);
 	GUI_OBJECTS.push(nMovesButton);
-	
-	
 }
 
-function drawTab1(){
-	// Drawing the Tab
+// Drawing the Tab for the Genetic Algorithm GUI
+function drawTabGA(){
 	fill(GUI_COLOR);
 	noStroke();
 	rect(MAP_BORDER,0,220,600);
@@ -184,18 +195,23 @@ function mousePressed(){
 	else if(mx < MAP_BORDER && TOOL == 4){
 		let collide = 0 ;
 		let i = 0
+
+		// Loop through obstacles array, and see if the mouse coordinates collide with an obstacle
 		for(i= 0; i < OBSTACLES.length && !collide; i++){
 			let r1p = createVector(mx,my);
 			let r1s = createVector(1,1);
 			collide = checkCollideRects(OBSTACLES[i].pos,OBSTACLES[i].size,r1p,r1s);
 		}
 
+		// If click collides with and obstacle, it is removed from the array
 		if(collide) OBSTACLES.splice(i - 1, 1)
 	}
+	// Click in map, changes the spawn location
 	else if(mx < MAP_BORDER && TOOL == 5){
 		START_POS = createVector(mouseX,mouseY);
 		TOOL = 1;
 	}
+	// Click in map, changes the objectve location
 	else if(mx < MAP_BORDER && TOOL == 6){
 		OBJECTIVE_POS = createVector(mouseX,mouseY);
 		TOOL = 1;
@@ -205,6 +221,7 @@ function mousePressed(){
 		let collide = 0;
 		let i = 0;
 
+		// Loops checking if click has collided with a button coordinate
 		for(i = 0; i < GUI_OBJECTS.length && !collide; i++){
 			let r1p = createVector(mx,my);
 			let r1s = createVector(1,1);
@@ -244,7 +261,7 @@ function mouseReleased(){
 	}
 }
 
-// Returns 1 if there is collision, 0 if there isnt
+// Returns 1 if there is collision, 0 if there isnt - used throught out whole program
 function checkCollideRects(rectPos1,rectSize1,rectPos2,rectSize2){
       // checking if player collided with objective
       if(rectPos1.x < rectPos2.x + rectSize2.x && 

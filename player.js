@@ -1,13 +1,12 @@
 class Player{
   constructor(defaultPos,playerSize,playerObj){
-    this.pos = createVector(defaultPos.x,defaultPos.y);
-    this.size = playerSize;             // Expect to be 4-20
-    this.vel = createVector(PLAYER_VELOCITY, PLAYER_VELOCITY);       // Expect to be 1-10
-    this.extForce = createVector(0,0);  // External force velocity
-    this.state = "alive";               // "alive";"dead";"won"
-    this.objectivePos = playerObj;
-    this.numberMoves = 0;
-    this.usefulMoves = createVector(0,0);
+    this.pos = createVector(defaultPos.x,defaultPos.y);         // Marks the (x,y) position of the player
+    this.size = playerSize;                                     // Between [4,20] should be good enough
+    this.vel = createVector(PLAYER_VELOCITY, PLAYER_VELOCITY);  // As a rule of thumb, make smaller than the minimum obstacle size.
+    this.extForce = createVector(0,0);                          // External force velocity - may be used to add gravity or a pull/push.
+    this.state = "alive";                                       // "alive";"dead";"won"
+    this.objectivePos = playerObj;                              // Marks where the player's objective is
+    this.numberMoves = 0;                                       // Moves made by the player
   }
   
   get pos(){
@@ -59,20 +58,6 @@ class Player{
 		    // checking if player collided with objective
 	        if(test){
 	        	this.state = "won";
-	        }
-
-	        if(moveX == 1){
-	        	this.usefulMoves.x++;
-	        }
-	        else if(moveX == -1){
-	            this.usefulMoves.x = this.usefulMoves.x - 1;
-	        }
-
-	        if(moveY == 1){
-	            this.usefulMoves.y++;
-	        }
-	        else if(moveY == -1){
-	            this.usefulMoves.y = this.usefulMoves.y - 1;
 	        }
 	    }
 	    // else collision x and y(dead) - updatePos should stop doing anything

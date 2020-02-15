@@ -72,8 +72,9 @@ class guiObject{
 				PERMIT_ARRAY = [];
   				for(let i = 0; i < NUMBER_MOVES; i++) PERMIT_ARRAY.push(PERMIT_VALUES);
 				
+				CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
 				PLAYERS = new PlayerControl(NUMBER_PLAYERS,START_POS,OBJECTIVE_POS,PLAYER_SIZE);
-				GA_MANAGER = new GeneticAlgorithm("uniform","roulette","discrete",PERMIT_ARRAY,NUMBER_MOVES,NUMBER_PLAYERS);
+				GA_MANAGER = new GeneticAlgorithm("uniform","rank","discrete",PERMIT_ARRAY,NUMBER_MOVES,NUMBER_PLAYERS);
 
 			}
 			else if(this.text == "Draw" && (TOOL != 2 && TOOL != 3)) TOOL = 3;
