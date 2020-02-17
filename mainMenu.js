@@ -18,9 +18,12 @@ let GA_MANAGER = [];	// Object of type GeneticAlgorithm: Stores the Genetic Algo
 let PERMIT_ARRAY = [];	// An array of the possible moves a player may make. 
 let PERMIT_VALUES = [];	// A matrix containing all moves a player may make, for X steps.
 let MAP_BORDER = 800;	// The X edge of the map the players may navigate. Allows to separete the GUI space
-let DIVERSITY_WEIGHT;
-let DIVERSITY_FALLOF;
-let CURRENT_DIVERSITY;
+let DIVERSITY_WEIGHT;	// Minimum value of diversity: The bigger, the lesser the reward for diversity
+let DIVERSITY_FALLOFF;	// Fallof factor for diversity reward after a player reaches the objective
+let CURRENT_DIVERSITY;	// Current diversity value
+let P_MUTATION;			// probMutation for GA value
+let P_ELITISM;			// probElitism for GA value
+let P_CROSSOVER;		// probCrossover for GA value
 
 // Individual Player Configuration
 let START_POS;		// Vector containing the start position for all players
@@ -28,7 +31,8 @@ let OBJECTIVE_POS;	// Vector containing the objective position for all players.
 let PLAYER_SIZE;	// Vector containg the X and Y size for all players.
 
 // GUI Variables
-let TOOL = 1; 			// 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos
+let TOOL = 1; 			// 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos, 7 - Change prob crossover
+let DIVERSITY_TOOL = 0 	// 1 - Maximum Diversity, 2 - Fallof
 let GUI_COLOR;			// Default color used for the GUI
 let GUI_OBJECTS = [];	// Object-array of type GuiObject: Used to store interactible buttons and their functions
 let BEGIN_RECT = [];	// Vector used to store the first pair of coordinates for a new obstacle.
@@ -38,18 +42,21 @@ let TOGGLE_POP_CENTER;	// Used to decide whether to draw or not the red circle r
 /////////////////////////////// VARIABLE SETUP ////////////////////////////////////
 function setup() {
   createCanvas(1020,600);
-  frameRate(100);
+  frameRate(300);
 
   NUMBER_PLAYERS = 200;
   NUMBER_GENERATION = 0;
   NUMBER_GENERATION_FRAME = 0;
-  NUMBER_MOVES = 700;
+  NUMBER_MOVES = 150;
   NUMBER_COUNTER_CHROM = 0;
   PLAYER_VELOCITY = 5;
   DIVERSITY_WEIGHT = 15;
-  DIVERSITY_FALLOF = 0.1;
+  DIVERSITY_FALLOFF = 0.5;
   CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
-  TOGGLE_POP_CENTER
+  P_MUTATION = 0.1;
+  P_ELITISM = 0.1;
+  P_CROSSOVER = 0.7;
+  TOGGLE_POP_CENTER = 0;
 
   // Individual Player Configuration
   START_POS = createVector(200,200)
@@ -157,6 +164,33 @@ function setupTabGA(){
 	let nMovesButtonPos = createVector(MAP_BORDER + 10, 210);
 	let nMovesButtonSize = createVector(200,40);
 	let nMovesButton = new guiObject(nMovesButtonPos,nMovesButtonSize,"Moves", 1);
+
+	// Sixth row
+	let crossOverPPos  = createVector(MAP_BORDER + 10, 260);
+	let crossOverPSize  = createVector(95,40);
+	let crossOverPButton = new guiObject(crossOverPPos,crossOverPSize,"Crossover", 2);
+
+	let elitismPPos  = createVector(MAP_BORDER + 115, 260);
+	let elitismPSize  = createVector(95,40);
+	let elitismPButton = new guiObject(elitismPPos,elitismPSize,"Elitism", 2);
+
+	// Seventh row
+	let mutationPPos  = createVector(MAP_BORDER + 10, 310);
+	let mutationPSize  = createVector(95,40);
+	let mutationPButton = new guiObject(mutationPPos,mutationPSize,"Mutation", 2);
+
+	let playerSizePos  = createVector(MAP_BORDER + 115, 310);
+	let playerSizeSize  = createVector(95,40);
+	let playerSizeButton = new guiObject(playerSizePos,playerSizeSize,"Player Size", 2);
+
+	// Eigth row
+	let diversityMaxPos = createVector(MAP_BORDER + 10, 360);
+	let diversityMaxSize  = createVector(95,40);
+	let diversityMaxButton = new guiObject(diversityMaxPos,diversityMaxSize,"Diversity", 2);
+
+	let diversityFallPos = createVector(MAP_BORDER + 115, 360);
+	let diversityFallSize  = createVector(95,40);
+	let diversityFallButton = new guiObject(diversityFallPos,diversityFallSize,"Falloff", 2);
 	
 	// Adding buttons to the GUI_OBJECTS vector
 	GUI_OBJECTS.push(runButton);
@@ -167,6 +201,12 @@ function setupTabGA(){
 	GUI_OBJECTS.push(goalButton);
 	GUI_OBJECTS.push(popSizeButton);
 	GUI_OBJECTS.push(nMovesButton);
+	GUI_OBJECTS.push(crossOverPButton);
+	GUI_OBJECTS.push(elitismPButton);
+	GUI_OBJECTS.push(mutationPButton);
+	GUI_OBJECTS.push(playerSizeButton);
+	GUI_OBJECTS.push(diversityMaxButton);
+	GUI_OBJECTS.push(diversityFallButton);
 }
 
 // Drawing the Tab for the Genetic Algorithm GUI
@@ -259,6 +299,89 @@ function mouseReleased(){
 		BEGIN_RECT = [];
 		END_RECT = [];
 	}
+	// Adjusting position for Percentage Slidebar
+	else if(TOOL == 7 || TOOL == 8 || TOOL == 9){
+		// Find button index
+		let cont = 0;
+		let i = 0;
+
+		for(i = 0; i < GUI_OBJECTS.length && !cont; i++){
+			if(TOOL == 7 && GUI_OBJECTS[i].text == "Crossover") cont = 1; 
+			if(TOOL == 8 && GUI_OBJECTS[i].text == "Elitism") cont = 1;
+			if(TOOL == 9 && GUI_OBJECTS[i].text == "Mutation") cont = 1;
+			if(DIVERSITY_TOOL == 1 && GUI_OBJECTS[i].text == "Diversity") cont = 1; 
+		}
+
+		if(cont) i--;
+		let barLimit = GUI_OBJECTS[i].pos.x + GUI_OBJECTS[i].size.x - (GUI_OBJECTS[i].size.y/4);
+		// Found button index (i)
+		let test = 0;
+
+		// Test if allowed to set value: Dont want Prob Crossover + Prob Elitism to be > 1
+		if(mouseX < GUI_OBJECTS[i].pos.x) test = 0;
+		else if(mouseX > barLimit ) test = 1;
+		else{
+			test = (mouseX - GUI_OBJECTS[i].pos.x) / (barLimit - GUI_OBJECTS[i].pos.x);
+		}
+
+		// Treatment for each slider
+		if(TOOL == 7){
+			if(test + P_ELITISM < 1) GUI_OBJECTS[i].bar = test;
+			else GUI_OBJECTS[i].bar = 1 - P_ELITISM - 0.01;
+			P_CROSSOVER = GUI_OBJECTS[i].bar;
+			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
+		}
+		else if(TOOL == 8){
+			if(test + P_CROSSOVER < 1) GUI_OBJECTS[i].bar = test;
+			else GUI_OBJECTS[i].bar = 1 - P_CROSSOVER - 0.01;
+			P_ELITISM = GUI_OBJECTS[i].bar;
+			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
+		}
+		else if(TOOL == 9){
+			GUI_OBJECTS[i].bar = test;
+			P_MUTATION = GUI_OBJECTS[i].bar;
+			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
+		}
+		
+		TOOL = 1;
+	}
+	else if(DIVERSITY_TOOL == 1 || DIVERSITY_TOOL == 2){
+		// Find button index
+		let cont = 0;
+		let i = 0;
+
+		for(i = 0; i < GUI_OBJECTS.length && !cont; i++){
+			if(DIVERSITY_TOOL == 1 && GUI_OBJECTS[i].text == "Diversity") cont = 1; 
+			if(DIVERSITY_TOOL == 2 && GUI_OBJECTS[i].text == "Falloff") cont = 1; 
+		}
+
+		if(cont) i--;
+		let barLimit = GUI_OBJECTS[i].pos.x + GUI_OBJECTS[i].size.x - (GUI_OBJECTS[i].size.y/4);
+		// Found button index (i)
+		let test = 0;
+
+		// Test if allowed to set value: Dont want Prob Crossover + Prob Elitism to be > 1
+		if(mouseX < GUI_OBJECTS[i].pos.x) test = 0;
+		else if(mouseX > barLimit ) test = 1;
+		else{
+			test = (mouseX - GUI_OBJECTS[i].pos.x) / (barLimit - GUI_OBJECTS[i].pos.x);
+		}
+
+		if(DIVERSITY_TOOL == 1){
+			GUI_OBJECTS[i].bar = test;
+			DIVERSITY_WEIGHT = 1 + (test * 49);
+			CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
+			GUI_OBJECTS[i].varText = DIVERSITY_WEIGHT.toFixed(1);
+			printf("Diversity weight change to " + DIVERSITY_WEIGHT)
+		}
+		else if(DIVERSITY_TOOL == 2){
+			GUI_OBJECTS[i].bar = test;
+			DIVERSITY_FALLOFF = test;
+			GUI_OBJECTS[i].varText = DIVERSITY_FALLOFF.toFixed(2);
+		}
+		DIVERSITY_TOOL = 0;
+	}
+	
 }
 
 // Returns 1 if there is collision, 0 if there isnt - used throught out whole program

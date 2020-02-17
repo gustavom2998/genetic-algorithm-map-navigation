@@ -23,7 +23,7 @@ class Chromossome{
   
   // Update the chromossomes fitness score based on an internal function - Note that function should only generate positive results, and reward higher fitness.
   updateFitness(number){
-    let newFit = 0;
+    let newFit = 0.001;
     // Rewards based on distance to the objetive
     if(this.chromType == "discrete"){
       // Finds the player who's fitness is being calculate
@@ -34,23 +34,24 @@ class Chromossome{
       //newFit = 10/( abs(player.pos.x - player.objectivePos.x - (player.size.x/2)) + abs(player.pos.y - player.objectivePos.y - (player.size.y/2)));
       // Euclidean distance - Due to window size, the maximum it can be is dist(800,600) = 1000
       newFit = 1000 - abs(Math.sqrt(Math.pow((player.pos.x + (player.size.x/2)) - (player.objectivePos.x + player.size.x/2),2) +
-                           Math.pow((player.pos.y + (player.size.y/2)) - (player.objectivePos.y + player.size.y/2),2)))
+                           Math.pow((player.pos.y + (player.size.y/2)) - (player.objectivePos.y + player.size.y/2),2)));
       
       // Normalized to be between 0 and 1 
-      newFit = newFit / 1000 
+      newFit = newFit / 1000; 
 
       // Sqrt: F'(sqrt(0)) is very large and gets smaller as x grows
-      newFit = Math.sqrt(newFit)
+      newFit = Math.sqrt(newFit);
 
-      //
-      newFit += (abs(player.pos.x - PLAYERS.avgPlayerPos.x) + abs(player.pos.y - PLAYERS.avgPlayerPos.y))/(1000*CURRENT_DIVERSITY)
+      // Rewarding on distance to population center - Scallable by Current Diversity - 
+      newFit += (abs(player.pos.x - PLAYERS.avgPlayerPos.x) + abs(player.pos.y - PLAYERS.avgPlayerPos.y))/(10*CURRENT_DIVERSITY);
+      
       // If the player wins, further reward is given for minimizing number of steps to find objective
       if(player.state == "won"){
-        newFit = newFit + (100/player.numberMoves)
+        newFit = newFit + (1000/player.numberMoves);
         // If players are winning, gradually decrease diversity
-        if(CURRENT_DIVERSITY > 0) CURRENT_DIVERSITY = CURRENT_DIVERSITY + DIVERSITY_DROPOFF * CURRENT_DIVERSITY;
+        if(CURRENT_DIVERSITY < 40) CURRENT_DIVERSITY = CURRENT_DIVERSITY + DIVERSITY_FALLOFF * CURRENT_DIVERSITY;
       }
-      else if(player.state == "dead") newFit = 0;
+      else if(player.state == "dead") newFit = 0.001;
     }
     this.chromFitness = newFit;
   }
@@ -62,10 +63,8 @@ class Chromossome{
     if(this.chromType == "discrete"){
       // Chosing random value from the list of values
       let oldGene = this.chromGenes[pos];
-      let newGene = oldGene;
-      while(newGene == oldGene){
-        newGene = random(this.chromValues[0]);
-      }
+      let newGene = random(this.chromValues[0]);
+      this.chromGenes[pos] = newGene;
     }
   }
   

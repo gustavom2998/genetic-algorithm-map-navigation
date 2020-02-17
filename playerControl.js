@@ -44,11 +44,18 @@ class PlayerControl{
 		// NEED TO START NEXT GENERATION
 		else{
 			GA_MANAGER.updateFitness();
+
+			if(NUMBER_GENERATION == 45){
+		      for(let i = 0; i < GA_MANAGER.population.length; i++){
+		        print(GA_MANAGER.population[i].chromFitness);
+		      }
+		    }
+
 			GA_MANAGER.newGeneration();
 			NUMBER_GENERATION_FRAME = 0;
 			NUMBER_GENERATION++;
 			PLAYERS = new PlayerControl(NUMBER_PLAYERS,START_POS,OBJECTIVE_POS,PLAYER_SIZE);
-			print(`GENERATION: ${NUMBER_GENERATION} BEST FIT: ${GA_MANAGER.chromBest.chromFitness} AVG FIT: ${GA_MANAGER.chromAvg}`);
+			if(NUMBER_GENERATION%10 == 0) print(`GENERATION: ${NUMBER_GENERATION} BEST FIT: ${GA_MANAGER.chromBest.chromFitness} AVG FIT: ${GA_MANAGER.chromAvg}`);
 
 			return 1;
 		}

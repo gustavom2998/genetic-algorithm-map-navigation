@@ -57,7 +57,7 @@ class GeneticAlgorithm{
     
     // Sorting population by fitness (First position is highest fitness)
     this.population.sort(function(var1, var2){
-      if(var1.chromFitness < var2.chromFitness) return 1;
+      if(var1.chromFitness <= var2.chromFitness) return 1;
       else return -1;
       }
     );
