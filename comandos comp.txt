@@ -1,0 +1,15 @@
+python -c "import flask; print(flask.__version__)"
+
+set FLASK_APP=hello
+
+set FLASK_ENV=development
+
+flask run
+
+git init
+
+git add .
+
+git commit -m "new commit"
+
+git push heroku master

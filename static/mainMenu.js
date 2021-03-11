@@ -18,12 +18,16 @@ let GA_MANAGER = [];	// Object of type GeneticAlgorithm: Stores the Genetic Algo
 let PERMIT_ARRAY = [];	// An array of the possible moves a player may make. 
 let PERMIT_VALUES = [];	// A matrix containing all moves a player may make, for X steps.
 let MAP_BORDER = 800;	// The X edge of the map the players may navigate. Allows to separete the GUI space
-let DIVERSITY_WEIGHT;	// Minimum value of diversity: The bigger, the lesser the reward for diversity
+let DIVERSITY_WEIGHT;	// Minimum value of diversity: The smaller, the lesser the reward for diversity.
 let DIVERSITY_FALLOFF;	// Fallof factor for diversity reward after a player reaches the objective
 let CURRENT_DIVERSITY;	// Current diversity value
 let P_MUTATION;			// probMutation for GA value
 let P_ELITISM;			// probElitism for GA value
 let P_CROSSOVER;		// probCrossover for GA value
+let SELECTION_METHOD	// Selection method used for GA
+let ARRAY_SELECTIONS_METHODS // Array containing selection methods
+let CROSSOVER_METHOD	// Crossover method used for GA
+let ARRAY_CROSSOVER_METHODS // Array containing crossover methods
 
 // Individual Player Configuration
 let START_POS;		// Vector containing the start position for all players
@@ -31,7 +35,7 @@ let OBJECTIVE_POS;	// Vector containing the objective position for all players.
 let PLAYER_SIZE;	// Vector containg the X and Y size for all players.
 
 // GUI Variables
-let TOOL = 1; 			// 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos, 7 - Change prob crossover
+let TOOL = 1; 			// 1 - Stopped, Customize, 2 - Execute GA, 3 - Draw Rect, 4 - Delete Rect, 5 - Change Initial player Pos, 6 - Change goal pos, 7 - Change prob crossover, 8 - Change Prob Elitism, 9 - Change prob mutation, 10 - change player size
 let DIVERSITY_TOOL = 0 	// 1 - Maximum Diversity, 2 - Fallof
 let GUI_COLOR;			// Default color used for the GUI
 let GUI_OBJECTS = [];	// Object-array of type GuiObject: Used to store interactible buttons and their functions
@@ -41,8 +45,9 @@ let TOGGLE_POP_CENTER;	// Used to decide whether to draw or not the red circle r
 
 /////////////////////////////// VARIABLE SETUP ////////////////////////////////////
 function setup() {
-  createCanvas(1020,600);
+  var cnv = createCanvas(1020,600);
   frameRate(300);
+  cnv.parent('sketchholder');
 
   NUMBER_PLAYERS = 200;
   NUMBER_GENERATION = 0;
@@ -50,13 +55,18 @@ function setup() {
   NUMBER_MOVES = 150;
   NUMBER_COUNTER_CHROM = 0;
   PLAYER_VELOCITY = 5;
-  DIVERSITY_WEIGHT = 15;
+  DIVERSITY_WEIGHT = 1;
   DIVERSITY_FALLOFF = 0.5;
   CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
   P_MUTATION = 0.1;
   P_ELITISM = 0.1;
   P_CROSSOVER = 0.7;
   TOGGLE_POP_CENTER = 0;
+  SELECTION_METHOD = "rank"
+  ARRAY_SELECTIONS_METHODS = ["roulette","rank","tournament2","tournament4"]
+  CROSSOVER_METHOD = "one point"
+  ARRAY_CROSSOVER_METHODS = ["one point","two point", "uniform"]
+
 
   // Individual Player Configuration
   START_POS = createVector(200,200)
@@ -73,27 +83,29 @@ function setup() {
 /////////////////////////////// MAIN LOOP /////////////////////////////////////////
 function draw(){
   background(color(40,40,60));
-  
-  // Draws the GUI
+  // Draws the GUI - Allows for the user to change parameters without interacting with code
   drawTabGA();
+  drawExecData();
 
-  // Draws the obstacles
+  // Draws the existing obstacle objects - Begins with no obsticles
   for(let i = 0; i < OBSTACLES.length; i++) OBSTACLES[i].draw();
 
-  // Simulation executing
+  // Simulation executing - This calls PlayerControl, which organizes the agents and uses the genetic algorithm
   if(TOOL == 2){
   	let res = PLAYERS.move();
   }
 
-  // Drawing a new obstacle - shows obstacle being drawn until mouse release
+  // Drawing a new obstacle - shows obstacle being drawn until mouse release - only then is the object instanced
   if(TOOL == 3 && mouseIsPressed && mouseX < MAP_BORDER){
   	let x1; let x2; let y1; let y2;
+  	// Capture coordinates for new being drawn obsticle
   	x1 = BEGIN_RECT.x;
   	x2 = mouseX;
 
   	y1 = BEGIN_RECT.y;
   	y2 = mouseY;
 
+  	// Invert coordinates if the values are switched
   	let aux = 0;
   	if(y2 < y1){
   		aux = y2;
@@ -106,6 +118,7 @@ function draw(){
   		x1 = aux;
   	}
 
+  	// Drawing the temporary obsticle (only happens until mouse release)
   	fill(50,50,70);
     stroke(100);
   	rect(x1,y1,x2-x1,y2-y1);
@@ -125,6 +138,7 @@ function draw(){
 }
 
 /////////////////////////////// AUXILIARY FUNCTIONS ///////////////////////////////
+// Setup function for initializing the user GUI seen on the right hand side of screen.
 function setupTabGA(){
 	// For each row, a Y value of 50 was used as an offset. 
 	// For two buttons per row, the first button had an X offset of 10, size 95. The second button had an offset of 100 + 10 + 5.
@@ -166,29 +180,39 @@ function setupTabGA(){
 	let nMovesButton = new guiObject(nMovesButtonPos,nMovesButtonSize,"Moves", 1);
 
 	// Sixth row
-	let crossOverPPos  = createVector(MAP_BORDER + 10, 260);
+	let selectionMethodButtonPos = createVector(MAP_BORDER + 10, 260);
+	let selectionMethodButtonSize = createVector(200,40);
+	let selectionMethodButton = new guiObject(selectionMethodButtonPos,selectionMethodButtonSize,"Selection Method:", 0);
+
+	// Seventh row
+	let crossoverMethodButtonPos = createVector(MAP_BORDER + 10, 310);
+	let crossoverMethodButtonSize = createVector(200,40);
+	let crossoverMethodButton = new guiObject(crossoverMethodButtonPos,crossoverMethodButtonSize,"Crossover Method:", 0);
+
+	// Eight row
+	let crossOverPPos  = createVector(MAP_BORDER + 10, 360);
 	let crossOverPSize  = createVector(95,40);
 	let crossOverPButton = new guiObject(crossOverPPos,crossOverPSize,"Crossover", 2);
 
-	let elitismPPos  = createVector(MAP_BORDER + 115, 260);
+	let elitismPPos  = createVector(MAP_BORDER + 115, 360);
 	let elitismPSize  = createVector(95,40);
 	let elitismPButton = new guiObject(elitismPPos,elitismPSize,"Elitism", 2);
 
-	// Seventh row
-	let mutationPPos  = createVector(MAP_BORDER + 10, 310);
+	// Ninth row
+	let mutationPPos  = createVector(MAP_BORDER + 10, 410);
 	let mutationPSize  = createVector(95,40);
 	let mutationPButton = new guiObject(mutationPPos,mutationPSize,"Mutation", 2);
 
-	let playerSizePos  = createVector(MAP_BORDER + 115, 310);
+	let playerSizePos  = createVector(MAP_BORDER + 115, 410);
 	let playerSizeSize  = createVector(95,40);
 	let playerSizeButton = new guiObject(playerSizePos,playerSizeSize,"Player Size", 2);
 
-	// Eigth row
-	let diversityMaxPos = createVector(MAP_BORDER + 10, 360);
+	// Tenth row
+	let diversityMaxPos = createVector(MAP_BORDER + 10, 460);
 	let diversityMaxSize  = createVector(95,40);
 	let diversityMaxButton = new guiObject(diversityMaxPos,diversityMaxSize,"Diversity", 2);
 
-	let diversityFallPos = createVector(MAP_BORDER + 115, 360);
+	let diversityFallPos = createVector(MAP_BORDER + 115, 460);
 	let diversityFallSize  = createVector(95,40);
 	let diversityFallButton = new guiObject(diversityFallPos,diversityFallSize,"Falloff", 2);
 	
@@ -201,6 +225,8 @@ function setupTabGA(){
 	GUI_OBJECTS.push(goalButton);
 	GUI_OBJECTS.push(popSizeButton);
 	GUI_OBJECTS.push(nMovesButton);
+	GUI_OBJECTS.push(selectionMethodButton);
+	GUI_OBJECTS.push(crossoverMethodButton);
 	GUI_OBJECTS.push(crossOverPButton);
 	GUI_OBJECTS.push(elitismPButton);
 	GUI_OBJECTS.push(mutationPButton);
@@ -209,7 +235,7 @@ function setupTabGA(){
 	GUI_OBJECTS.push(diversityFallButton);
 }
 
-// Drawing the Tab for the Genetic Algorithm GUI
+// Drawing the GUI seen on the right hand side of the screen
 function drawTabGA(){
 	fill(GUI_COLOR);
 	noStroke();
@@ -227,7 +253,7 @@ function mousePressed(){
 	let mx = mouseX;
 	let my = mouseY;
 
-	// If Draw/Delete is selected and click is on screen
+	// If Draw is selected and click is on screen
 	if(mx < MAP_BORDER && TOOL == 3){
 		BEGIN_RECT = createVector(mx,my);
 	}
@@ -299,8 +325,43 @@ function mouseReleased(){
 		BEGIN_RECT = [];
 		END_RECT = [];
 	}
-	// Adjusting position for Percentage Slidebar
-	else if(TOOL == 7 || TOOL == 8 || TOOL == 9){
+	// User updated method, needs to update GUIObject
+	else if( TOOL == 11 || TOOL == 12){
+		// Scan through Selection methods
+		let cont = 0;
+		let i = 0;
+		if(TOOL == 11){
+			// Find position of current selection method
+			for(i = 0; i < ARRAY_SELECTIONS_METHODS.length && ARRAY_SELECTIONS_METHODS[cont] != SELECTION_METHOD; i++){
+				if(ARRAY_SELECTIONS_METHODS[i] == SELECTION_METHOD) cont = i;
+			}
+			cont = (cont + 1) % ARRAY_SELECTIONS_METHODS.length
+			SELECTION_METHOD = ARRAY_SELECTIONS_METHODS[cont]
+		}
+		// Scan through Crossover methods
+		else if(TOOL == 12){
+			
+			for(i = 0; i < ARRAY_CROSSOVER_METHODS.length && ARRAY_CROSSOVER_METHODS[cont] != CROSSOVER_METHOD; i++){
+				if(ARRAY_CROSSOVER_METHODS[i] == CROSSOVER_METHOD) cont = i;
+			}
+			cont = (cont + 1) % ARRAY_CROSSOVER_METHODS.length
+			CROSSOVER_METHOD = ARRAY_CROSSOVER_METHODS[cont]
+
+		}
+
+		// Update the GUIObjects
+		i = 0;
+		cont = 0;
+		for(i = 0; i < GUI_OBJECTS.length && !cont; i++){
+			if(TOOL == 11 && GUI_OBJECTS[i].text == "Selection Method:") cont = 1;
+			if(TOOL == 12 && GUI_OBJECTS[i].text == "Crossover Method:") cont = 1;
+		}
+		if(cont) i--;
+		if(TOOL == 11) GUI_OBJECTS[i].varText = SELECTION_METHOD;
+		if(TOOL == 12) GUI_OBJECTS[i].varText = CROSSOVER_METHOD;
+	}
+	// User selected to adjust position for Percentage Slidebar
+	else if(TOOL == 7 || TOOL == 8 || TOOL == 9 || TOOL == 10){
 		// Find button index
 		let cont = 0;
 		let i = 0;
@@ -309,7 +370,9 @@ function mouseReleased(){
 			if(TOOL == 7 && GUI_OBJECTS[i].text == "Crossover") cont = 1; 
 			if(TOOL == 8 && GUI_OBJECTS[i].text == "Elitism") cont = 1;
 			if(TOOL == 9 && GUI_OBJECTS[i].text == "Mutation") cont = 1;
-			if(DIVERSITY_TOOL == 1 && GUI_OBJECTS[i].text == "Diversity") cont = 1; 
+			if(TOOL == 10 && GUI_OBJECTS[i].text == "Player Size") cont = 1;
+			if(DIVERSITY_TOOL == 1 && GUI_OBJECTS[i].text == "Diversity") cont = 1;
+			if(DIVERSITY_TOOL == 2 && GUI_OBJECTS[i].text == "Falloff") cont = 1; 
 		}
 
 		if(cont) i--;
@@ -326,21 +389,30 @@ function mouseReleased(){
 
 		// Treatment for each slider
 		if(TOOL == 7){
+			// Probability of Crossover slider
 			if(test + P_ELITISM < 1) GUI_OBJECTS[i].bar = test;
 			else GUI_OBJECTS[i].bar = 1 - P_ELITISM - 0.01;
 			P_CROSSOVER = GUI_OBJECTS[i].bar;
 			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
 		}
 		else if(TOOL == 8){
+			// Probability of Elitism slider
 			if(test + P_CROSSOVER < 1) GUI_OBJECTS[i].bar = test;
 			else GUI_OBJECTS[i].bar = 1 - P_CROSSOVER - 0.01;
 			P_ELITISM = GUI_OBJECTS[i].bar;
 			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
 		}
 		else if(TOOL == 9){
+			// Probability of Mutation slider
 			GUI_OBJECTS[i].bar = test;
 			P_MUTATION = GUI_OBJECTS[i].bar;
 			GUI_OBJECTS[i].varText = GUI_OBJECTS[i].bar.toFixed(2);
+		}
+		else if(TOOL == 10){
+			// Player size configurationslider
+			GUI_OBJECTS[i].bar = test
+			PLAYER_SIZE = createVector(5 + int(25*test),5 + int(25*test))
+			GUI_OBJECTS[i].varText = PLAYER_SIZE.x;
 		}
 		
 		TOOL = 1;
@@ -349,6 +421,7 @@ function mouseReleased(){
 		// Find button index
 		let cont = 0;
 		let i = 0;
+
 
 		for(i = 0; i < GUI_OBJECTS.length && !cont; i++){
 			if(DIVERSITY_TOOL == 1 && GUI_OBJECTS[i].text == "Diversity") cont = 1; 
@@ -369,10 +442,9 @@ function mouseReleased(){
 
 		if(DIVERSITY_TOOL == 1){
 			GUI_OBJECTS[i].bar = test;
-			DIVERSITY_WEIGHT = 1 + (test * 49);
+			DIVERSITY_WEIGHT = test * 5;
 			CURRENT_DIVERSITY = DIVERSITY_WEIGHT;
 			GUI_OBJECTS[i].varText = DIVERSITY_WEIGHT.toFixed(1);
-			printf("Diversity weight change to " + DIVERSITY_WEIGHT)
 		}
 		else if(DIVERSITY_TOOL == 2){
 			GUI_OBJECTS[i].bar = test;
@@ -395,3 +467,16 @@ function checkCollideRects(rectPos1,rectSize1,rectPos2,rectSize2){
       }
       else return 0; // No collision
   }
+
+  // Used to display metrics/information about current execution.
+ function drawExecData(){
+ 	fill(red(GUI_COLOR) + 15,green(GUI_COLOR) + 15,blue(GUI_COLOR) + 15);
+  	rect(MAP_BORDER + 10, 510, 200, 80);
+
+  	// Update Generation Text
+	textSize(14);
+	fill(210);
+	textAlign(LEFT,TOP);
+	let str_aux =  `Generation: ${NUMBER_GENERATION}\nBest fitness: ${GA_MANAGER.chromBest?GA_MANAGER.chromBest.chromFitness.toFixed(5):"NA"}\nAvg. fitness: ${GA_MANAGER.chromAvg?GA_MANAGER.chromAvg.toFixed(5):"NA"}\nCurrent Diversity: ${CURRENT_DIVERSITY.toFixed(2)}`
+	text(str_aux,MAP_BORDER + 15, 515,200, 80);
+ }

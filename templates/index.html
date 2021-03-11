@@ -1,0 +1,83 @@
+<!DOCTYPE html><html><head>
+    <script src="{{ url_for('static', filename='p5.js') }}"></script>
+    <script src="{{ url_for('static', filename='p5.dom.min.js') }}">></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/StephanWagner/jBox@v1.2.0/dist/jBox.all.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/StephanWagner/jBox@v1.2.0/dist/jBox.all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheet.css') }}">
+    <script src="https://kit.fontawesome.com/9ad49f4154.js" crossorigin="anonymous"></script>
+    <title> Map Navigation with Genetic Algorithm</title>
+  </head>
+
+  <body style="background-color:white;">
+
+  	<div class = "container flex-column">
+
+        <div class = "container mt-3 mb-3" id="about">
+            
+            <div class="container">
+                <div class = "tituloSecao">
+                    <h2 class="jumbotron-heading text-center titulosClaro">Map Navigation with Genetic Algorithm</h2>
+                </div>
+
+                <div class="corpoSecao mb-3">
+	                <h5 class = "lead text-center mt-3">
+	                    This is my first project using JavaScript. I used the P5.JS library to have a basic computer graphics environment, but besides that, everything was developed from scratch (including the GUI). To customize the generated webpage Boostrap was used, and to deploy the project I created a very basic flask application in Python and deployed it to Heroku. This project was used to better grasp the concepts behind the Genetic Algorithm and learn how to apply theory to solve a practical problem.
+	                </h5>
+
+	                <h5 class = "lead text-center mt-3">
+	                	For more information and instructions on how to use this web application, view the Github Repo for this project:
+	                </h5>
+
+	                <div class="container d-flex justify-content-center mb-3">
+
+	                    <a href="https://github.com/gustavom2998/genetic-algorithm-map-navigation">
+	                    	<i class="fab fa-github fa-3x"></i> 
+	                    </a>
+	                            
+	                </div>
+
+	                <h3 class="jumbotron-heading text-center mt-5">Author: Gustavo Fardin Monti<h3/>
+	                <div class="container mb-3  d-flex justify-content-center">
+	                    <a href ="mailto:gustavo_m@hotmail.co.uk" type="button" class = "btn btn-outline-primary">
+	                         gustavo_m@hotmail.co.uk <i class="fas fa-envelope"></i> 
+	                    </a>
+	                 </div>
+	                 
+	                 <div class="container mb-3  d-flex justify-content-center">
+	                                
+	                    <a href="https://www.linkedin.com/in/gustavo-fardin-monti/"><i class="fab fa-linkedin fa-lg"></i></a>
+
+	                               
+	                    <a href="https://github.com/gustavom2998"><i class="fab fa-github fa-lg"></i></a>
+                               
+                	</div>
+
+            	</div>
+
+
+        	<div style="container mt-3"  id="sketchholder">
+        	</div>
+                
+        	</div>
+
+        </div>
+
+        
+
+        <script src="{{ url_for('static', filename='mainMenu.js') }}"></script >
+        <script src="{{ url_for('static', filename='geneticAlgorithm.js') }}"></script>
+        <script src="{{ url_for('static', filename='chromossome.js') }}"></script>
+        <script src="{{ url_for('static', filename='player.js') }}"></script>
+        <script src="{{ url_for('static', filename='obstacle.js') }}"></script>
+        <script src="{{ url_for('static', filename='playerControl.js') }}"></script>
+        <script src="{{ url_for('static', filename='guiObject.js') }}"></script>
+           
+    </div>
+</body></html>

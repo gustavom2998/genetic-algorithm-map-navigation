@@ -1,4 +1,8 @@
-
+/* 	Project name: Genetic Algorithm Visualization
+	Project author: Gustavo Fardin Monti.
+	The P5.JS library was used. Visit the website to know more: https://p5js.org/
+	Feel free to contact me at gustavo_m@hotmail.co.uk */
+// Individual chromossome found in the genetic algorithm class. Used to represent a collection of possible player moves.
 class Chromossome{
   //  chromSize - The number of genes that exists in each chromossome. 
   //  chromGenes - The list containing the actual value of the genes for the particular chromossome. 
@@ -39,17 +43,17 @@ class Chromossome{
       // Normalized to be between 0 and 1 
       newFit = newFit / 1000; 
 
-      // Sqrt: F'(sqrt(0)) is very large and gets smaller as x grows
+      // Sqrt: F'(sqrt(0)) is very large and gets smaller as x grows (Reward gets smaller the closer agents get to objective)
       newFit = Math.sqrt(newFit);
 
       // Rewarding on distance to population center - Scallable by Current Diversity - 
-      newFit += (abs(player.pos.x - PLAYERS.avgPlayerPos.x) + abs(player.pos.y - PLAYERS.avgPlayerPos.y))/(10*CURRENT_DIVERSITY);
+      newFit += (CURRENT_DIVERSITY ** (2))*(abs(player.pos.x - PLAYERS.avgPlayerPos.x) + abs(player.pos.y - PLAYERS.avgPlayerPos.y))/(20000);
       
       // If the player wins, further reward is given for minimizing number of steps to find objective
       if(player.state == "won"){
         newFit = newFit + (1000/player.numberMoves);
         // If players are winning, gradually decrease diversity
-        if(CURRENT_DIVERSITY < 40) CURRENT_DIVERSITY = CURRENT_DIVERSITY + DIVERSITY_FALLOFF * CURRENT_DIVERSITY;
+        if (CURRENT_DIVERSITY > 0) CURRENT_DIVERSITY = CURRENT_DIVERSITY - (DIVERSITY_FALLOFF/NUMBER_PLAYERS) * CURRENT_DIVERSITY;
       }
       else if(player.state == "dead") newFit = 0.001;
     }

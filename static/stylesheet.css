@@ -1,0 +1,76 @@
+.foto-perfil{
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    border-radius: 100%;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body{
+    background:#e9ecef
+}
+
+.corBG{
+    background: #989EA4
+}
+
+.fundoTitulo{
+    background: rgb(0,123,255);
+    background-size: 1px;
+    
+}
+
+.tituloSecao{
+    background: rgb(0,123,255);
+    border-radius: 15px 15px 0px 0px;
+}
+
+.corpoSecao{
+    border: 1px;
+    border-radius: 0px 0px 15px 15px;
+}
+
+
+.corBG2{
+    background: #8e9aaf
+}
+.carousel-inner img {
+    margin: auto;
+  }
+
+.corPrimaria{
+    background-color: #ffffff;
+}
+
+.corSecundaria{
+    background-color: #f1faee
+}
+
+p{
+    font-family: Lato, 'Helvetica Neue', Arial, Helvetica, Arial, sans-serif;
+    color: black;
+
+}
+
+.icones{
+    padding-left: 5px;
+}
+
+.titulosEscuro{
+    padding: 20px;
+    font-weight: 700;
+    color: #0d3b66;
+}
+
+.titulosClaro{
+    padding: 20px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.sketchHolder{
+    padding-left: 15px;
+}

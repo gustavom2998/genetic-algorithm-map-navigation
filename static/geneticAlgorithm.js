@@ -1,6 +1,11 @@
+/*  Project name: Genetic Algorithm Visualization
+  Project author: Gustavo Fardin Monti.
+  The P5.JS library was used. Visit the website to know more: https://p5js.org/
+  Feel free to contact me at gustavo_m@hotmail.co.uk */
+// Used to store chromossomes, initialize and breed populations. 
 class GeneticAlgorithm{
     //  crossoverType - "one point", "two point" or "uniform". Describes method for selecting genes for crossover. See readme for more information.
-    //  selectionType - "roulette", "rank".  Describes method for selecting individuals for crossover. See readme for more information.
+    //  selectionType - "roulette", "rank", "tournament2" or "tournament4".  Describes method for selecting individuals for crossover. See readme for more information.
     //  chromType - "discrete", planned to add "continuous". See Chromosome Class.
     //  chromValues - Array containing possible values for each gene. See Chromosome Class.
     //  chromSize - Number of genes in each chromosome. 
@@ -36,13 +41,14 @@ class GeneticAlgorithm{
     }
   }
 
+  // Used to log chromossome data to the console
   viewPopulation(){
     for(let i = 0; i < this.popSize; i++){
       print(`Chromossome ${i}:Type:${this.population[i].chromType}  ${this.population[i].chromGenes} Fitness: ${this.population[i].chromFitness}`);
     }
   }
   
-  // Updates each the chromossomes fitness values, average fitness and the best chromossome
+  // Updates each the chromossomes fitness values, average fitness and the best chromossome - uses fitness function defined within Chromossome class
   updateFitness(){
     // Updates fitness for each chromosome and accumulates new fitness values
     let newAvg = 0;
@@ -193,8 +199,41 @@ class GeneticAlgorithm{
         // Picks second player
         second = this.population[aux];
       }
-      else if(this.selectionType == "steadyState"){
+      // Implemented 2 and 4 Person Tournament - Perfomed twice to find parents
+      else if(this.selectionType == "tournament2" || this.selectionType == "tournament4"){
+        let auxC1 = []
+        let j = 0
+        let tournamentSize = 0;
+        if(this.selectionType == "tournament2") tournamentSize = 2;
+        else tournamentSize = 4;
 
+        // Finding the first parent - first tournament is hosted
+        for(j = 0; j < tournamentSize; j++){
+          let aux = Math.floor(Math.random() * this.popSize) // Random number between 0 and popSize - 1
+
+          if(j == 0) auxC1 = this.population[aux] // If it's the first parent, initializes the aux
+          else{ // else, tests if fitness is larger and updates the best parent
+            if(auxC1.chromFitness < this.population[aux].chromFitness){
+              auxC1 = this.population[aux]
+            }
+          }
+        }
+        let auxC2 = []
+        // Finding the second parent - second tournament is hosted
+        for(j = 0; j < tournamentSize; j++){
+          let aux = Math.floor(Math.random() * this.popSize) // Random number between 0 and popSize - 1
+
+          // If it's the first parent, initializes the aux, else, tests if fitness is larger and updates the best parent
+          if(j == 0) auxC2 = this.population[aux]
+          else{
+            if(auxC2.chromFitness < this.population[aux].chromFitness){
+              auxC2 = this.population[aux]
+            }
+          }
+        }
+
+        first = auxC1;
+        second = auxC2;
       }
 
       // New chromosome produced by the crossover of the 1st and 2nd parent is pushed into the new population
